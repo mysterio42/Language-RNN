@@ -17,22 +17,20 @@ def generate_model_name(size=5):
     return ''.join(random.choice(letters) for _ in range(size))
 
 
-def train_model(model, data, seq_len, learning_rate, clip, n_epochs, save_model):
+def train_model(model, train_loader, learning_rate, clip, n_epochs, save_model):
     optimizer = Adam(model.parameters(), lr=learning_rate)
     criterion = CrossEntropyLoss()
     model.train()
-    end = data.size(1) - seq_len
+    end = len(train_loader)
     for epoch in range(n_epochs):
 
-        for i in range(0, end, seq_len):
-            inputs = data[:, i:i + seq_len]
-            targets = data[:, (i + 1):(i + 1) + seq_len]
+        for i, (features, labels) in enumerate(train_loader):
 
             optimizer.zero_grad()
 
-            outputs = model(inputs)
+            outputs = model(features)
 
-            loss = criterion(outputs, targets.reshape(-1))
+            loss = criterion(outputs, labels.reshape(-1))
 
             loss.backward()
 
@@ -40,7 +38,7 @@ def train_model(model, data, seq_len, learning_rate, clip, n_epochs, save_model)
 
             optimizer.step()
 
-            if i % (seq_len * 5) == 0:
+            if i % 20 == 0:
                 print(
                     f'Epoch [{epoch + 1}/{n_epochs}], Step[{i}/{end}], Loss: {loss.item()}, Perplexity: {np.exp(loss.item())}')
     if save_model:

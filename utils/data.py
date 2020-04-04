@@ -1,4 +1,5 @@
 import torch
+from torch.utils.data import Dataset, DataLoader
 
 
 class Dictionary(object):
@@ -35,19 +36,35 @@ class Corpus(Dictionary):
                     self.add_word(word)
         return next_words
 
-    def tokenize(self,path,batch_size=20):
-        torch.set_printoptions(edgeitems=80)
+    def tokenize(self, path, seq_len):
         next_words = self._process(path)
         encoded = torch.zeros(size=(len(next_words),), dtype=torch.int64)
         for i, word in enumerate(next_words):
             encoded[i] = self.word2idx[word]
 
-        num_batches = encoded.size(0) // batch_size
-        encoded = encoded[:num_batches*batch_size]
-        return encoded.view(size=(batch_size,-1))
+        # num_sequences = encoded.size(0) // seq_len
+        # encoded = encoded[:num_sequences * seq_len]
+        return encoded
 
+
+class LanguageData(Dataset, Corpus):
+
+    def __init__(self, path, seq_len, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.data = self.tokenize(path, seq_len)
+        self.seq_len = seq_len
+
+    def __getitem__(self, item):
+        x_sl = slice(item, item + self.seq_len)
+        y_sl = slice(item + 1, item + 1 + self.seq_len)
+        return self.data[x_sl], self.data[y_sl]
 
     def __len__(self):
-        return len(self.word2idx)
+        return len(self.data) - self.seq_len - 1
 
 
+def loaders(path, batch_size, seq_len):
+    language_dataset = LanguageData(path=path, seq_len=seq_len)
+    vocab_dim = len(language_dataset.word2idx)
+    train_loader = DataLoader(dataset=language_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
+    return vocab_dim, train_loader

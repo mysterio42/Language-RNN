@@ -3,8 +3,8 @@ import argparse
 import torch
 
 from network.net import LanguageRNN
-from utils.data import Corpus
-from utils.model import train_model, load_model
+from utils.data import loaders
+from utils.model import train_model
 
 torch.manual_seed(1)
 
@@ -22,28 +22,28 @@ def parse_args():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--lr', type=float, default=0.001,
-                        help='Model learning rate  default: 0.001')
+                        help='Learning rate  default: 0.001')
 
-    parser.add_argument('--clip', type=float, default=0.5,
-                        help='Embedding dim default: 0.5')
+    parser.add_argument('--clip', type=float, default=1,
+                        help='Gradient Clipping default: 1')
 
-    parser.add_argument('--embed', type=int, default=256,
-                        help='Embedding dim default: 256')
+    parser.add_argument('--embed', type=int, default=128,
+                        help='Embedding dim default: 64')
 
     parser.add_argument('--hidden', type=int, default=512,
-                        help='Hidden dim default: 512')
+                        help='Hidden dim default: 1024')
 
     parser.add_argument('--layers', type=int, default=2,
-                        help='LSTM Layer dim default: 2')
+                        help='LSTM Layer dim default: 1')
 
     parser.add_argument('--epochs', type=int, default=5,
                         help='Number of Epochs default: 5')
 
-    parser.add_argument('--batch', type=int, default=20,
-                        help='batch size default: 20')
+    parser.add_argument('--batch', type=int, default=64,
+                        help='Batch size default: 64')
 
-    parser.add_argument('--seq', type=int, default=30,
-                        help='Sequence size default: 30')
+    parser.add_argument('--seq', type=int, default=5,
+                        help='Sequence size default: 5')
 
     parser.add_argument('--load', type=str2bool, default=True,
                         help='True: Load trained model  False: Train model default: True')
@@ -54,9 +54,8 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    corpus = Corpus()
-    encoded = corpus.tokenize('data/train.txt')
-    vocab_dim = len(corpus)
+    vocab_dim, train_loader = loaders(path='data/train.txt',
+                                      batch_size=args.batch, seq_len=args.seq)
 
     model = LanguageRNN(vocab_dim=vocab_dim,
                         embed_dim=args.embed,
@@ -68,6 +67,6 @@ if __name__ == '__main__':
         pass
 
     else:
-        train_model(model=model, data=encoded,
-                    seq_len=args.seq, learning_rate=args.lr, clip=args.clip,n_epochs=args.epochs,
+        train_model(model=model, train_loader=train_loader,
+                    learning_rate=args.lr, clip=args.clip, n_epochs=args.epochs,
                     save_model=True)
