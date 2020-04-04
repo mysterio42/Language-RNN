@@ -41,9 +41,6 @@ class Corpus(Dictionary):
         encoded = torch.zeros(size=(len(next_words),), dtype=torch.int64)
         for i, word in enumerate(next_words):
             encoded[i] = self.word2idx[word]
-
-        # num_sequences = encoded.size(0) // seq_len
-        # encoded = encoded[:num_sequences * seq_len]
         return encoded
 
 
